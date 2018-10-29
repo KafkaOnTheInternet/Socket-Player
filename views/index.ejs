@@ -45,6 +45,12 @@
 
     <div class="container">
         <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+            <form>
+              <div class="form-group">
+                <label for="email">Email address:</label>
+                <input type="email" class="form-control" id="email">
+              </div>
+            </form> 
     <div id="player"></div>
         <div id="controls">
           <div id="buttons" style="float: left;">
@@ -83,6 +89,10 @@
     <script src="js/bootstrap.min.js"></script>
 
     <script>
+      function initalizePlayer() {
+            var customURL = document.getElementById("email");
+            console.log(customURL);
+      }
         function initializeButtons() {
             var socket = io();
             var playButton = $('#play');
@@ -140,7 +150,7 @@
         player = new YT.Player('player', {
           height: '480',
           width: '720',
-          videoId: 'zadppu2Bmy0',
+          videoId: 'A6APxbBYnoo',
           events: {
             'onReady': onPlayerReady,
             'onStateChange': onPlayerStateChange
