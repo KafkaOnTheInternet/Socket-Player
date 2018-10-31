@@ -46,13 +46,18 @@
     </nav>
 
     <div class="container">
+
         <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
-            <form>
+            <form id="form1">
               <div class="form-group">
-                <label for="email">Email address:</label>
-                <input type="email" class="form-control" id="email">
-              </div>
-            </form> 
+                <label for="email">Video ID</label>
+                <input class="form-control" id="email" type="text">
+              </div> <!-- removed submit button from here --> 
+            </form>
+            <button id="submitStuff" type="button" class="btn btn-default" aria-label="Left Align"">
+                <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+                <label for="submitStuff">Send</label>
+            </button> 
     <div id="player"></div>
         <div id="controls">
           <div id="buttons" style="float: left;">
@@ -89,16 +94,54 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script>window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')</script>
     <script src="js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+		window.addEventListener('keydown',function(e){if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13){if(e.target.nodeName=='INPUT'&&e.target.type=='text'){e.preventDefault();return false;}}},true);
+	</script>
+	<script type="text/javascript">
+		/*$("form1").submit(function (event) {
+			console.log("Handler for .submit() called");
+			event.preventDefault();
+		}); */
+	</script> 
 
     <script>
-      function initalizePlayer() {
-            var customURL = document.getElementById("email");
-            console.log(customURL);
-      }
+
+    	/*function createCallback(customID) {
+    		console.log("Changed to ID " + customID);
+
+    	} */
+
+    	/*function receiveReload() {
+    		socket.on('event', function(msg) {
+    			console.log("Sending back url" + msg);
+    			return msg.url.toString();
+    		});
+    	} */
+
+     	function initalizePlayer(newID) {
+      		//document.getElementById("email").innerHTML = newID;
+      		window.location.reload();
+      		console.log("Changed to ID " + newID);
+      		//document.getElementById("email").value = newID;
+      		Xrm.Page.getAttribute("email").setValue(newID); 
+      		//window.location.reload();
+      } 
+      	function tryWithLoad() {
+      		socket.on('event', function(msg) {
+      			if(msg.state == 'reload') {
+      				console.log("Loading new video");
+      				player.loadVideoById(msg.url.toString());
+      				progressBarLoop();
+      				initializeButtons();
+      				player.playVideo();
+      			}
+      		});
+      	}
         function initializeButtons() {
             var socket = io();
             var playButton = $('#play');
             var pauseButton = $('#pause');
+            var submitButton = $('#submitStuff');
 
             playButton.click(function (event) {
               var mydata = {state: 'play', time: player.getCurrentTime()};
@@ -108,17 +151,27 @@
               var mydata = {state: 'pause', time: player.getCurrentTime()};
               socket.emit('event', mydata);
             });
+            submitButton.click(function (event) {
+            	var customURL = document.getElementById("email").value.toString();
+            	var mydata = {state: 'reload', time: 0, url: customURL};
+            	//window.location.reload();
+            	//initalizePlayer();
+            	socket.emit('event', mydata);
+            });
+
         }
         function progressBarLoop() {
             var progressBar = $('#progressBar');
             var progressSquare = $('#square');
-            var videoLength = player.getDuration();
+            var videoLength = 10//player.getDuration();
+            console.log("Video length is " + videoLength);
             progressBar.click(function(event) {
+            	console.log("Current player duration is" + player.getDuration())
                 //send seek request
                 var divOffset = $(this).offset();
                 var temp = io();
 
-                var seekToTemp = (event.pageX - divOffset.left)/600*videoLength;
+                var seekToTemp = (event.pageX - divOffset.left)/600*player.getDuration();
                 var states = {state: 'play', time: seekToTemp};
 
                 temp.emit('event', states);
@@ -134,6 +187,12 @@
 
             }, 200);
         }
+       /* function returnID() {
+        	socket.on('event', function (msg) {
+        		console.log("Attempting to change to " + msg.url.toString())
+        		return msg.url.toString();
+        	})
+        } */
     </script>
 
 
@@ -149,10 +208,12 @@
       //    after the API code downloads.
       var player;
       function onYouTubeIframeAPIReady() {
+      	console.log("YT player will now get init");
+      	//initalizePlayer();
         player = new YT.Player('player', {
           height: '480',
           width: '720',
-          videoId: 'A6APxbBYnoo',
+          videoId: document.getElementById("email").value.toString(),//document.getElementById("email").value.toString(),//receiveReload(),document.getElementById("email").value.toString(), //returnID(), //A6APxbBYnoo
           events: {
             'onReady': onPlayerReady,
             'onStateChange': onPlayerStateChange
@@ -171,6 +232,7 @@
         progressBarLoop();
         initializeButtons();
         event.target.playVideo();
+        //initalizePlayer();
       }
 
       // 5. The API calls this function when the player's state changes.
@@ -199,6 +261,9 @@
       function seekTo(seconds) {
         player.seekTo(seconds);
       }
+      function loadVideoById(customID) {
+      	player.loadVideoById(customID);
+      }
     </script>
     </div><!-- /.container -->
     <script src = "/js/socket.io.js"></script>
@@ -211,10 +276,15 @@
             playVideo();
           }
           else if (msg.state.toString() == 'pause') {
+          	console.log("Paused video");
             pauseVideo();
           }
-        });
-          
+          else if(msg.state.toString() == 'reload') {
+          	console.log("Received stuff");
+          	//initalizePlayer(msg.url.toString());
+          	tryWithLoad();
+          }
+        });    
 	  </script>
   </body>
 </html>
